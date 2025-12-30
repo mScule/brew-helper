@@ -1,46 +1,57 @@
+import z from "zod";
+
+import {useState} from "react";
+
 import {Controller, useForm} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
-import {useCreateBrewer} from "@/react-query/hooks/brewer/use-create-brewer";
+
 import {toast} from "sonner";
-import {Field, FieldGroup, FieldLabel} from "@/shadcn/ui/field";
+
 import {Input} from "@/shadcn/ui/input";
-import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger} from "@/shadcn/ui/dialog";
 import {Button} from "@/shadcn/ui/button";
-import z from "zod";
-import {useState} from "react";
-import {PlusIcon} from "lucide-react";
-import {TypographySmall} from "@/shadcn/typography/typography-small";
-import {PositiveIntegerSchema} from "@/form-value-schemas/positive-integer-schema";
-import {NameSchema} from "@/form-value-schemas/name-schema";
+import {Field, FieldGroup, FieldLabel} from "@/shadcn/ui/field";
+import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger} from "@/shadcn/ui/dialog";
 import {Alert, AlertDescription, AlertTitle} from "@/shadcn/ui/alert";
 
-const BrewerCreationFormSchema = z.object({
-  name: NameSchema,
-  cupInMillilitres: PositiveIntegerSchema
+import type {WithId} from "@/types/with-id";
+import type {Brewer} from "@/types/brewer";
+import {useUpdateBrewer} from "@/react-query/hooks/brewer/use-update-brewer";
+import {NameSchema} from "@/form-value-schemas/name-schema";
+import {PositiveIntegerSchema} from "@/form-value-schemas/positive-integer-schema";
+import {PenIcon} from "lucide-react";
+
+const FormSchema = z.object({
+  name: NameSchema.optional(),
+  cupInMillilitres: PositiveIntegerSchema.optional()
 });
 
-export function BrewerCreationForm() {
-  const createBrewer = useCreateBrewer();
+type Props = {
+  brewer: WithId<Brewer>;
+};
+
+export function BrewerModificationForm({brewer}: Props) {
+  const updateBrewer = useUpdateBrewer();
 
   const [isOpen, setIsOpen] = useState(false);
 
   const form = useForm({
-    resolver: zodResolver(BrewerCreationFormSchema),
+    resolver: zodResolver(FormSchema),
     defaultValues: {
       name: "",
       cupInMillilitres: ""
     }
   });
 
-  async function submitCreateBrewer(brewer: z.infer<typeof BrewerCreationFormSchema>) {
+  async function submitUpdateBrewer(data: z.infer<typeof FormSchema>) {
     try {
-      const created = await createBrewer.mutateAsync({
+      await updateBrewer.mutateAsync({
+        id: brewer.id,
         brewer: {
-          name: brewer.name,
-          cupInMillilitres: Number(brewer.cupInMillilitres)
+          ...(data.name && {name: data.name}),
+          ...(data.cupInMillilitres && {cupInMillilitres: Number(data.cupInMillilitres)})
         }
       });
-      toast.success(`Brewer ${created.name} added`);
+      toast.success(`Brewer ${data.name ?? brewer.name} updated`);
       form.reset();
       setIsOpen(false);
     } catch {
@@ -52,15 +63,14 @@ export function BrewerCreationForm() {
     <Dialog open={isOpen} onOpenChange={isOpen => setIsOpen(isOpen)}>
       <DialogTrigger asChild>
         <Button variant="outline">
-          <span>Add new</span>
-          <PlusIcon />
+          Update <PenIcon />
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Add a new brewer</DialogTitle>
+          <DialogTitle>Update {brewer.name}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={form.handleSubmit(submitCreateBrewer)}>
+        <form id="brewer-creation-form" onSubmit={form.handleSubmit(submitUpdateBrewer)}>
           <FieldGroup>
             <Controller
               control={form.control}
@@ -69,7 +79,7 @@ export function BrewerCreationForm() {
                 <>
                   <Field data-invalid={fieldState.invalid}>
                     <FieldLabel>Name</FieldLabel>
-                    <Input placeholder="Acme Coffee Maker" {...field} />
+                    <Input placeholder={brewer.name} {...field} />
                   </Field>
                   {fieldState.error && (
                     <Alert variant="destructive">
@@ -87,14 +97,7 @@ export function BrewerCreationForm() {
                 <>
                   <Field data-invalid={fieldState.invalid}>
                     <FieldLabel>Cup size in millilitres</FieldLabel>
-                    <TypographySmall>
-                      <i>
-                        Give it in following format: <b className="text-green-500">125</b>. Values like{" "}
-                        <b className="text-destructive">1.25</b> or <b className="text-destructive">1,25</b> aren't
-                        allowed.
-                      </i>
-                    </TypographySmall>
-                    <Input placeholder="For example 1.25ml is 125" {...field} />
+                    <Input placeholder={brewer.cupInMillilitres + ""} {...field} />
                   </Field>
                   {fieldState.error && (
                     <Alert variant="destructive">
@@ -106,8 +109,8 @@ export function BrewerCreationForm() {
               )}
             />
             <Button variant="outline" type="submit">
-              <span>Add new</span>
-              <PlusIcon />
+              <span>Update</span>
+              <PenIcon />
             </Button>
           </FieldGroup>
         </form>

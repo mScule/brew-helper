@@ -1,31 +1,42 @@
+import z from "zod";
+
+import {useState} from "react";
+
 import {Controller, useForm} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
-import {useCreateCoffee} from "@/react-query/hooks/coffee/use-create-coffee";
+
 import {toast} from "sonner";
-import {Field, FieldGroup, FieldLabel} from "@/shadcn/ui/field";
+
 import {Input} from "@/shadcn/ui/input";
-import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger} from "@/shadcn/ui/dialog";
 import {Button} from "@/shadcn/ui/button";
-import z from "zod";
-import {useState} from "react";
-import {PlusIcon} from "lucide-react";
-import {PositiveIntegerSchema} from "@/form-value-schemas/positive-integer-schema";
-import {NameSchema} from "@/form-value-schemas/name-schema";
+import {Field, FieldGroup, FieldLabel} from "@/shadcn/ui/field";
+import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger} from "@/shadcn/ui/dialog";
 import {Alert, AlertDescription, AlertTitle} from "@/shadcn/ui/alert";
 
-const CoffeeCreationFormSchema = z.object({
-  name: NameSchema,
-  cupInMillilitres: PositiveIntegerSchema,
-  coffeeInGrams: PositiveIntegerSchema
+import type {WithId} from "@/types/with-id";
+import {NameSchema} from "@/form-value-schemas/name-schema";
+import {PositiveIntegerSchema} from "@/form-value-schemas/positive-integer-schema";
+import {PenIcon} from "lucide-react";
+import {useUpdateCoffee} from "@/react-query/hooks/coffee/use-update-coffee";
+import type {Coffee} from "@/types/coffee";
+
+const FormSchema = z.object({
+  name: NameSchema.optional(),
+  cupInMillilitres: PositiveIntegerSchema.optional(),
+  coffeeInGrams: PositiveIntegerSchema.optional()
 });
 
-export function CoffeeCreationForm() {
-  const createCoffee = useCreateCoffee();
+type Props = {
+  coffee: WithId<Coffee>;
+};
+
+export function CoffeeModificationForm({coffee}: Props) {
+  const updateCoffee = useUpdateCoffee();
 
   const [isOpen, setIsOpen] = useState(false);
 
   const form = useForm({
-    resolver: zodResolver(CoffeeCreationFormSchema),
+    resolver: zodResolver(FormSchema),
     defaultValues: {
       name: "",
       cupInMillilitres: "",
@@ -33,36 +44,36 @@ export function CoffeeCreationForm() {
     }
   });
 
-  async function submitCreateCoffee(coffee: z.infer<typeof CoffeeCreationFormSchema>) {
+  async function submitUpdateCoffee(data: z.infer<typeof FormSchema>) {
     try {
-      const created = await createCoffee.mutateAsync({
+      await updateCoffee.mutateAsync({
+        id: coffee.id,
         coffee: {
-          name: coffee.name,
-          cupInMillilitres: Number(coffee.cupInMillilitres),
-          coffeeInGrams: Number(coffee.coffeeInGrams)
+          ...(data.name && {name: data.name}),
+          ...(data.cupInMillilitres && {cupInMillilitres: Number(data.cupInMillilitres)}),
+          ...(data.coffeeInGrams && {coffeeInGrams: Number(data.coffeeInGrams)})
         }
       });
-      toast.success(`Coffee ${created.name} added`);
+      toast.success(`Coffee ${data.name ?? coffee.name} updated`);
       form.reset();
       setIsOpen(false);
     } catch {
-      toast.error(`Error creating coffee`);
+      toast.error(`Error creating brewer`);
     }
   }
 
   return (
     <Dialog open={isOpen} onOpenChange={isOpen => setIsOpen(isOpen)}>
-      <form id="coffee-creation-form" onSubmit={form.handleSubmit(submitCreateCoffee)}>
-        <DialogTrigger asChild>
-          <Button variant="outline">
-            <span>Add new</span>
-            <PlusIcon />
-          </Button>
-        </DialogTrigger>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add new Coffee</DialogTitle>
-          </DialogHeader>
+      <DialogTrigger asChild>
+        <Button variant="outline">
+          Update <PenIcon />
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Update {coffee.name}</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={form.handleSubmit(submitUpdateCoffee)}>
           <FieldGroup>
             <Controller
               control={form.control}
@@ -71,7 +82,7 @@ export function CoffeeCreationForm() {
                 <>
                   <Field data-invalid={fieldState.invalid}>
                     <FieldLabel>Name</FieldLabel>
-                    <Input {...field} />
+                    <Input placeholder={coffee.name} {...field} />
                   </Field>
                   {fieldState.error && (
                     <Alert variant="destructive">
@@ -89,7 +100,7 @@ export function CoffeeCreationForm() {
                 <>
                   <Field data-invalid={fieldState.invalid}>
                     <FieldLabel>Cup size in millilitres</FieldLabel>
-                    <Input {...field} />
+                    <Input placeholder={coffee.cupInMillilitres + ""} {...field} />
                   </Field>
                   {fieldState.error && (
                     <Alert variant="destructive">
@@ -107,7 +118,7 @@ export function CoffeeCreationForm() {
                 <>
                   <Field data-invalid={fieldState.invalid}>
                     <FieldLabel>Coffee in grams per cup</FieldLabel>
-                    <Input {...field} />
+                    <Input placeholder={coffee.coffeeInGrams + ""} {...field} />
                   </Field>
                   {fieldState.error && (
                     <Alert variant="destructive">
@@ -118,12 +129,13 @@ export function CoffeeCreationForm() {
                 </>
               )}
             />
-            <Button type="submit" form="coffee-creation-form">
-              Add
+            <Button variant="outline" type="submit">
+              <span>Update</span>
+              <PenIcon />
             </Button>
           </FieldGroup>
-        </DialogContent>
-      </form>
+        </form>
+      </DialogContent>
     </Dialog>
   );
 }
