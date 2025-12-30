@@ -1,16 +1,22 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 
-import "./index.css";
 import { Index } from "./pages";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Toaster } from "./shadcn/ui/sonner";
+import { ThemeProvider } from "./components/theme-provider";
+
+import "./index.css";
 
 const queryClient = new QueryClient();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <Index />
+      <ThemeProvider defaultTheme="dark">
+        <Index />
+        <Toaster />
+      </ThemeProvider>
     </QueryClientProvider>
   </StrictMode>
 );

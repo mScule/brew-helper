@@ -1,13 +1,16 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { createEntry } from "@/storage/entry/createEntry";
-import type { Brewer } from "@/types/brewer";
+import { deleteEntry } from "@/storage/entry/deleteEntry";
 
-export function useCreateBrewer() {
+type Payload = {
+  id: string;
+};
+
+export function useDeleteBrewer() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (brewer: Brewer) => {
-      return await createEntry("brewer", brewer);
+    mutationFn: async ({ id }: Payload) => {
+      return await deleteEntry("brewer", id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["brewer"] });

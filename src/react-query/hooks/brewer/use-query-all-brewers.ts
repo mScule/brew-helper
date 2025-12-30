@@ -1,13 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { getCollection } from "@/storage/collection/getCollection";
 
-import type { Coffee } from "@/types/coffee";
+import type { Brewer } from "@/types/brewer";
 
-export function useReadCoffee() {
+export function useQueryAllBrewers() {
   return useQuery({
-    queryKey: ["coffee"],
+    queryKey: ["brewer"],
     queryFn: async () => {
-      const collection = await getCollection<Coffee>("coffee");
+      const collection = await getCollection<Brewer>("brewer");
 
       return Object.entries(collection).map(([key, value]) => ({
         id: key,
