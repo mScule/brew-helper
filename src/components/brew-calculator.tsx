@@ -1,5 +1,6 @@
 import {useQueryAllBrewers} from "@/react-query/hooks/brewer/use-query-all-brewers";
 import {useQueryAllCoffee} from "@/react-query/hooks/coffee/use-query-all-coffee";
+import {TypographyLead} from "@/shadcn/typography/typography-lead";
 import {TypographyP} from "@/shadcn/typography/typography-p";
 import {Button} from "@/shadcn/ui/button";
 import {Card, CardContent} from "@/shadcn/ui/card";
@@ -84,6 +85,14 @@ export function BrewCalculator() {
 
     return gramsPerMl * (totalWater / 100);
   }, [totalWater, gramsPerMl]);
+
+  if (brewers.data && coffee.data && (brewers.data.length === 0 || coffee.data.length === 0)) {
+    return (
+      <TypographyLead>
+        <b>Add</b> atleast <b>one brewer</b> and <b>one coffee</b> in order to calculate brews.
+      </TypographyLead>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-5">
